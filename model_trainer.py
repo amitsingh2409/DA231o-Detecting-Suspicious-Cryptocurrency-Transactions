@@ -11,11 +11,11 @@ from pyspark.ml.classification import (
     DecisionTreeClassifier,
     RandomForestClassifier,
     NaiveBayes,
-    MultilayerPerceptronClassifier,
     GBTClassifier,
     LinearSVC,
 )
 from pyspark.ml.evaluation import BinaryClassificationEvaluator
+from pyspark.ml.evaluation import MulticlassClassificationEvaluator
 
 
 def spark_split(df, ratios: list = [0.8, 0.2], target_col: str = "target"):
@@ -67,9 +67,6 @@ def train_model():
         "DecisionTreeClassifier": DecisionTreeClassifier(featuresCol="features", labelCol="label"),
         "RandomForestClassifier": RandomForestClassifier(featuresCol="features", labelCol="label"),
         "NaiveBayes": NaiveBayes(featuresCol="features", labelCol="label"),
-        "MultilayerPerceptronClassifier": MultilayerPerceptronClassifier(
-            featuresCol="features", labelCol="label", layers=[17, 10, 5, 2]
-        ),
         "GBTClassifier": GBTClassifier(featuresCol="features", labelCol="label"),
         "LinearSVC": LinearSVC(featuresCol="features", labelCol="label"),
     }
@@ -88,8 +85,31 @@ def train_model():
             )
             auc = evaluator.evaluate(predictions)
 
+            # Additional evaluators for other metrics
+            precision_evaluator = MulticlassClassificationEvaluator(
+                labelCol="label", predictionCol="prediction", metricName="weightedPrecision"
+            )
+            recall_evaluator = MulticlassClassificationEvaluator(
+                labelCol="label", predictionCol="prediction", metricName="weightedRecall"
+            )
+            f1_evaluator = MulticlassClassificationEvaluator(
+                labelCol="label", predictionCol="prediction", metricName="f1"
+            )
+            accuracy_evaluator = MulticlassClassificationEvaluator(
+                labelCol="label", predictionCol="prediction", metricName="accuracy"
+            )
+
+            precision = precision_evaluator.evaluate(predictions)
+            recall = recall_evaluator.evaluate(predictions)
+            f1 = f1_evaluator.evaluate(predictions)
+            accuracy = accuracy_evaluator.evaluate(predictions)
+
             mlflow.log_param("algorithm", name)
             mlflow.log_metric("auc", auc)
+            mlflow.log_metric("precision", precision)
+            mlflow.log_metric("recall", recall)
+            mlflow.log_metric("f1", f1)
+            mlflow.log_metric("accuracy", accuracy)
 
             input_example = train.select("features").limit(5).toPandas()
             input_example["features"] = input_example["features"].apply(
