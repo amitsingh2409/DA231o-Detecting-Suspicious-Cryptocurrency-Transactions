@@ -2,6 +2,7 @@ import os
 import shutil
 import mlflow
 import mlflow.spark
+import pandas as pd
 from pyspark.sql import SparkSession
 from pyspark.sql import functions as F
 
@@ -16,6 +17,22 @@ from pyspark.ml.classification import (
 )
 from pyspark.ml.evaluation import BinaryClassificationEvaluator
 from pyspark.ml.evaluation import MulticlassClassificationEvaluator
+
+features = [
+    "year",
+    "day",
+    "weight",
+    "looped",
+    "num_addresses",
+    "day_of_week",
+    "length_weight_interaction",
+    "income_count_interaction",
+    "length_boxcox",
+    "income_boxcox",
+    "weight_boxcox",
+    "count_boxcox",
+    "neighbors_boxcox",
+]
 
 
 def spark_split(df, ratios: list = [0.8, 0.2], target_col: str = "target"):
@@ -39,25 +56,7 @@ def train_model():
     df = df.withColumn("label", (df["label"] == "white").cast("int"))
 
     assembler = VectorAssembler(
-        inputCols=[
-            "year",
-            "day",
-            "length",
-            "weight",
-            "count",
-            "looped",
-            "neighbors",
-            "income",
-            "num_addresses",
-            "day_of_week",
-            "length_weight_interaction",
-            "income_count_interaction",
-            "length_boxcox",
-            "income_boxcox",
-            "weight_boxcox",
-            "count_boxcox",
-            "neighbors_boxcox",
-        ],
+        inputCols=features,
         outputCol="features",
     )
     data = assembler.transform(df)
@@ -124,5 +123,10 @@ def train_model():
     best_predictions = best_model.transform(test)
     shutil.rmtree("data/model_predictions.pq", ignore_errors=True)
     best_predictions.write.parquet("data/model_predictions.pq")
+    feature_importances = best_model.featureImportances.toArray()
+    importance_df = pd.DataFrame(
+        {"Feature": features, "Importance": feature_importances}
+    ).sort_values(by="Importance", ascending=False)
+    importance_df.to_csv("data/feature_importance.csv", index=False)
     best_model.save("models/best_model")
     spark.stop()

@@ -1,9 +1,12 @@
+import os
+import mlflow
 import mlflow.pyfunc
 from flask import Flask, request, jsonify
 import pandas as pd
 
 app = Flask(__name__)
 
+mlflow.set_tracking_uri(os.getenv("MLFLOW_TRACKING_URI"))
 model = mlflow.pyfunc.load_model("models/best_model")
 
 

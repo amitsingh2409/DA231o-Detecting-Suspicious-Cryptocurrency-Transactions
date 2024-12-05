@@ -7,6 +7,7 @@ import seaborn as sns
 import matplotlib.pyplot as plt
 import pandas as pd
 from scipy.stats import boxcox
+from pyspark.ml.evaluation import MulticlassClassificationEvaluator
 from sklearn.metrics import roc_curve, precision_recall_curve, confusion_matrix
 
 
@@ -71,7 +72,7 @@ def visualize_results_post_modeling():
 
     # ROC Curve
     plt.figure(figsize=(10, 6))
-    fpr, tpr, _ = roc_curve(df["prediction"], df["probability"])
+    fpr, tpr, _ = roc_curve(df["label"], df["probability"])
     plt.plot(fpr, tpr, label="ROC Curve")
     plt.xlabel("False Positive Rate")
     plt.ylabel("True Positive Rate")
@@ -82,7 +83,7 @@ def visualize_results_post_modeling():
 
     # Precision-Recall Curve
     plt.figure(figsize=(10, 6))
-    precision, recall, _ = precision_recall_curve(df["prediction"], df["probability"])
+    precision, recall, _ = precision_recall_curve(df["label"], df["probability"])
     plt.plot(recall, precision, label="Precision-Recall Curve")
     plt.xlabel("Recall")
     plt.ylabel("Precision")
@@ -99,4 +100,12 @@ def visualize_results_post_modeling():
     plt.ylabel("Actual")
     plt.title("Confusion Matrix")
     plt.savefig("models/confusion_matrix.png")
+    plt.close()
+
+    # Feature Importance
+    importance_df = pd.read_csv("data/feature_importance.csv")
+    plt.figure(figsize=(12, 8))
+    sns.barplot(x="Importance", y="Feature", data=importance_df)
+    plt.title("Feature Importance")
+    plt.savefig("models/feature_importance.png")
     plt.close()
