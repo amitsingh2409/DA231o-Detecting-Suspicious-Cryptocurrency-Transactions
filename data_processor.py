@@ -47,3 +47,7 @@ def feature_engineering():
 
     # Convert back to Spark DataFrame
     df = spark.createDataFrame(pandas_df)
+
+    shutil.rmtree("data/feature_engineered_data.pq", ignore_errors=True)
+    df.write.parquet("data/feature_engineered_data.pq")
+    spark.stop()

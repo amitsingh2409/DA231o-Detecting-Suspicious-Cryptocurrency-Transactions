@@ -52,7 +52,7 @@ def train_model():
     mlflow.set_tracking_uri(os.getenv("MLFLOW_TRACKING_URI"))
     spark = SparkSession.builder.appName("ModelTrainer").getOrCreate()
     df = spark.read.parquet("data/feature_engineered_data.pq")
-    # white as 0 and black as 1
+    # white as 1 and black as 0
     df = df.withColumn("label", (df["label"] == "white").cast("int"))
 
     assembler = VectorAssembler(
